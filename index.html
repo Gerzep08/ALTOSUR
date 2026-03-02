@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FracAdmin — Control de Gastos y Morosidad</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f1923;
+  --paper: #f5f0e8;
+  --cream: #ede8dc;
+  --accent: #c8410a;
+  --gold: #d4a017;
+  --green: #2d7a4f;
+  --red: #c8410a;
+  --blue: #1a4f7a;
+  --muted: #7a7060;
+  --border: #d4cfc4;
+  --card: #faf7f2;
+  --shadow: 0 2px 16px rgba(15,25,35,0.08);
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 15px;
+}
+
+/* NAV */
+nav {
+  background: var(--ink);
+  color: white;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+.nav-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  letter-spacing: -0.5px;
+}
+.nav-brand span { color: var(--gold); }
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+}
+.nav-tab {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.nav-tab:hover { background: rgba(255,255,255,0.1); color: white; }
+.nav-tab.active { background: var(--accent); color: white; }
+.nav-right { font-size: 0.8rem; color: rgba(255,255,255,0.5); }
+
+/* LAYOUT */
+.container { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+
+/* VIEWS */
+.view { display: none; }
+.view.active { display: block; }
+
+/* STATS GRID */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+.stat-card.green::before { background: var(--green); }
+.stat-card.gold::before { background: var(--gold); }
+.stat-card.blue::before { background: var(--blue); }
+.stat-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; }
+.stat-value { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--ink); line-height: 1; }
+.stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+
+/* SECTION HEADER */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+}
+
+/* BUTTONS */
+.btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #a83408; }
+.btn-secondary { background: var(--cream); color: var(--ink); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-success { background: var(--green); color: white; }
+.btn-success:hover { background: #225e3c; }
+.btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+.btn-icon { padding: 6px 10px; }
+
+/* TABLES */
+.table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  background: var(--cream);
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 0.73rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(212,160,23,0.04); }
+
+/* BADGES */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+.badge-red { background: #fde8df; color: var(--red); }
+.badge-green { background: #dff0e8; color: var(--green); }
+.badge-gold { background: #faf0d0; color: #a07010; }
+.badge-blue { background: #dde8f5; color: var(--blue); }
+.badge-gray { background: var(--cream); color: var(--muted); }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,25,35,0.55);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  animation: modalIn 0.2s ease;
+}
+@keyframes modalIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  background: white;
+  color: var(--ink);
+  transition: border-color 0.15s;
+  outline: none;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* FILTERS */
+.filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  align-items: center;
+}
+.filter-input {
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  background: white;
+  outline: none;
+  min-width: 200px;
+}
+.filter-input:focus { border-color: var(--accent); }
+
+/* PROGRESS BAR */
+.progress-bar {
+  height: 6px;
+  background: var(--cream);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--green);
+  transition: width 0.4s ease;
+}
+.progress-fill.red { background: var(--red); }
+.progress-fill.gold { background: var(--gold); }
+
+/* MOROSITY SUMMARY */
+.morosity-card {
+  background: linear-gradient(135deg, #1a0a04 0%, #3d1208 100%);
+  border-radius: var(--radius);
+  padding: 24px;
+  color: white;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+}
+.mc-item { text-align: center; }
+.mc-num { font-family: 'DM Serif Display', serif; font-size: 2.2rem; color: var(--gold); }
+.mc-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.7px; opacity: 0.7; margin-top: 4px; }
+
+/* RESUMEN POR CONCEPTO */
+.concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.concept-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.cc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.cc-name { font-weight: 600; font-size: 0.95rem; }
+.cc-amount { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--ink); }
+.cc-footer { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+/* TABS secondary */
+.tabs-secondary {
+  display: flex;
+  gap: 4px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 20px;
+}
+.tab-btn {
+  padding: 7px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.83rem;
+  font-weight: 500;
+  border-radius: 7px;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.tab-btn.active { background: white; color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .nav-tabs { display: none; }
+  .mobile-menu { display: flex; gap: 4px; }
+  .form-row { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .morosity-card { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  td, th { padding: 10px 10px; font-size: 0.82rem; }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+}
+.empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
+
+/* ALERT */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.alert-warning { background: #fff8e0; border: 1px solid #f0d060; color: #7a5c00; }
+.alert-info { background: #e8f0fb; border: 1px solid #b0c8f0; color: #1a4f7a; }
+
+/* Mobile bottom nav */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--ink);
+  padding: 8px 0 12px;
+  z-index: 100;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.mobile-nav-items {
+  display: flex;
+  justify-content: space-around;
+}
+.mnav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 12px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+}
+.mnav-item.active { color: var(--gold); }
+.mnav-icon { font-size: 1.2rem; }
+
+@media (max-width: 768px) {
+  .mobile-nav { display: block; }
+  body { padding-bottom: 70px; }
+}
+
+/* Print */
+@media print {
+  nav, .mobile-nav, .btn, .filters, .modal-overlay { display: none !important; }
+  body { background: white; }
+  .table-wrap { box-shadow: none; border: 1px solid #ccc; }
+}
+
+.amount-positive { color: var(--green); font-weight: 600; }
+.amount-negative { color: var(--red); font-weight: 600; }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--cream);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-left: 4px;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV DESKTOP -->
+<nav>
+  <div class="nav-brand">Frac<span>Admin</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="showView('departamentos')">🏠 Departamentos</button>
+    <button class="nav-tab" onclick="showView('cargos')">💰 Cargos</button>
+    <button class="nav-tab" onclick="showView('pagos')">✅ Pagos</button>
+    <button class="nav-tab" onclick="showView('morosidad')">⚠️ Morosidad</button>
+    <button class="nav-tab" onclick="showView('conceptos')">🏷️ Conceptos</button>
+  </div>
+  <div class="nav-right" id="fecha-nav"></div>
+</nav>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav">
+  <div class="mobile-nav-items">
+    <button class="mnav-item active" onclick="showView('dashboard')"><span class="mnav-icon">📊</span>Dashboard</button>
+    <button class="mnav-item" onclick="showView('departamentos')"><span class="mnav-icon">🏠</span>Deptos</button>
+    <button class="mnav-item" onclick="showView('cargos')"><span class="mnav-icon">💰</span>Cargos</button>
+    <button class="mnav-item" onclick="showView('pagos')"><span class="mnav-icon">✅</span>Pagos</button>
+    <button class="mnav-item" onclick="showView('morosidad')"><span class="mnav-icon">⚠️</span>Morosos</button>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ==================== DASHBOARD ==================== -->
+<div id="view-dashboard" class="view active">
+  <div class="section-header">
+    <h1 class="section-title">Resumen General</h1>
+    <div>
+      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+  </div>
+
+  <div class="stats-grid" id="dash-stats"></div>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px;" class="resp-cols">
+    <div>
+      <h3 style="font-family:'DM Serif Display',serif; font-size:1.1rem; margin-bottom:12px;">Recaudación por Concepto</h3>
+      <div id="concepto-bars"></div>
+    </div>
+    <div>
+      <h3 style="font-family:'DM Serif Display',serif; font-size:1.1rem; margin-bottom:12px;">Últimos Movimientos</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Depto</th><th>Concepto</th><th>Monto</th><th>Tipo</th></tr></thead>
+          <tbody id="ultimos-movimientos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <h3 style="font-family:'DM Serif Display',serif; font-size:1.1rem; margin-bottom:12px;">Top Deudores</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Departamento</th><th>Residente</th><th>Adeudo Total</th><th>Meses vencidos</th><th>Estado</th></tr></thead>
+        <tbody id="top-deudores"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DEPARTAMENTOS ==================== -->
+<div id="view-departamentos" class="view">
+  <div class="section-header">
+    <h1 class="section-title">Departamentos</h1>
+    <button class="btn btn-primary" onclick="openModal('modal-depto')">+ Nuevo Depto</button>
+  </div>
+  <div class="filters">
+    <input class="filter-input" type="text" placeholder="🔍 Buscar por número o residente..." id="filtro-deptos" oninput="renderDeptos()">
+    <select class="filter-input" id="filtro-estado-depto" onchange="renderDeptos()" style="min-width:160px;">
+      <option value="">Todos los estados</option>
+      <option value="Al corriente">Al corriente</option>
+      <option value="Moroso">Moroso</option>
+      <option value="Desocupado">Desocupado</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Depto</th><th>Residente</th><th>Teléfono</th><th>Email</th><th>Estado</th><th>Saldo</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-deptos"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== CARGOS ==================== -->
+<div id="view-cargos" class="view">
+  <div class="section-header">
+    <h1 class="section-title">Cargos y Cuotas</h1>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary" onclick="openModal('modal-cargo-masivo')">📤 Cargo Masivo</button>
+      <button class="btn btn-primary" onclick="openModal('modal-cargo')">+ Nuevo Cargo</button>
+    </div>
+  </div>
+  <div class="filters">
+    <input class="filter-input" type="text" placeholder="🔍 Buscar..." id="filtro-cargos" oninput="renderCargos()">
+    <select class="filter-input" id="filtro-concepto-cargo" onchange="renderCargos()" style="min-width:160px;"></select>
+    <select class="filter-input" id="filtro-estatus-cargo" onchange="renderCargos()" style="min-width:140px;">
+      <option value="">Todos</option>
+      <option value="Pendiente">Pendiente</option>
+      <option value="Pagado">Pagado</option>
+      <option value="Vencido">Vencido</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Depto</th><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Estatus</th><th>Acciones</th></tr>
+      </thead>
+      <tbody id="tabla-cargos"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== PAGOS ==================== -->
+<div id="view-pagos" class="view">
+  <div class="section-header">
+    <h1 class="section-title">Registro de Pagos</h1>
+    <button class="btn btn-primary" onclick="openModal('modal-pago')">+ Registrar Pago</button>
+  </div>
+  <div class="filters">
+    <input class="filter-input" type="text" placeholder="🔍 Buscar por depto o folio..." id="filtro-pagos" oninput="renderPagos()">
+    <select class="filter-input" id="filtro-concepto-pago" onchange="renderPagos()" style="min-width:160px;"></select>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Folio</th><th>Fecha</th><th>Depto</th><th>Residente</th><th>Concepto</th><th>Monto</th><th>Método</th></tr>
+      </thead>
+      <tbody id="tabla-pagos"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== MOROSIDAD ==================== -->
+<div id="view-morosidad" class="view">
+  <div class="section-header">
+    <h1 class="section-title">Control de Morosidad</h1>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Reporte</button>
+    </div>
+  </div>
+  <div class="morosity-card" id="morosity-summary"></div>
+  <div class="concept-grid" id="morosity-concepts"></div>
+  <h3 style="font-family:'DM Serif Display',serif; font-size:1.1rem; margin-bottom:12px;">Detalle de Deudores</h3>
+  <div class="filters">
+    <select class="filter-input" id="filtro-mora-nivel" onchange="renderMorosidad()" style="min-width:160px;">
+      <option value="">Todos los niveles</option>
+      <option value="Crítico">Crítico (+3 meses)</option>
+      <option value="Alto">Alto (2 meses)</option>
+      <option value="Bajo">Bajo (1 mes)</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Depto</th><th>Residente</th><th>Concepto</th><th>Meses vencidos</th><th>Adeudo</th><th>Nivel</th><th>Acción</th></tr>
+      </thead>
+      <tbody id="tabla-morosidad"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== CONCEPTOS ==================== -->
+<div id="view-conceptos" class="view">
+  <div class="section-header">
+    <h1 class="section-title">Conceptos de Cobro</h1>
+    <button class="btn btn-primary" onclick="openModal('modal-concepto')">+ Nuevo Concepto</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Nombre</th><th>Monto Mensual</th><th>Tipo</th><th>Descripción</th><th>Activo</th><th>Acciones</th></tr>
+      </thead>
+      <tbody id="tabla-conceptos"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- ==================== MODALES ==================== -->
+
+<!-- Modal Departamento -->
+<div class="modal-overlay" id="modal-depto">
+  <div class="modal">
+    <div class="modal-title">🏠 Departamento</div>
+    <input type="hidden" id="depto-id">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Número / Identificador *</label>
+        <input type="text" id="depto-num" placeholder="Ej: A-101">
+      </div>
+      <div class="form-group">
+        <label>Torre / Edificio</label>
+        <input type="text" id="depto-torre" placeholder="Ej: Torre A">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Nombre del Residente *</label>
+      <input type="text" id="depto-residente" placeholder="Nombre completo">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="tel" id="depto-tel" placeholder="33 1234 5678">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="depto-email" placeholder="correo@ejemplo.com">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Estado</label>
+      <select id="depto-estado">
+        <option>Al corriente</option>
+        <option>Moroso</option>
+        <option>Desocupado</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notas</label>
+      <textarea id="depto-notas" rows="2" placeholder="Observaciones..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-depto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveDepto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cargo -->
+<div class="modal-overlay" id="modal-cargo">
+  <div class="modal">
+    <div class="modal-title">💰 Registrar Cargo</div>
+    <input type="hidden" id="cargo-id">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Departamento *</label>
+        <select id="cargo-depto"></select>
+      </div>
+      <div class="form-group">
+        <label>Concepto *</label>
+        <select id="cargo-concepto" onchange="autoFillMontoCargo()"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Monto *</label>
+        <input type="number" id="cargo-monto" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Fecha de Cargo</label>
+        <input type="date" id="cargo-fecha">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha de Vencimiento</label>
+        <input type="date" id="cargo-vencimiento">
+      </div>
+      <div class="form-group">
+        <label>Período (mes/año)</label>
+        <input type="month" id="cargo-periodo">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notas</label>
+      <input type="text" id="cargo-notas" placeholder="Observaciones opcionales">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-cargo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCargo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cargo Masivo -->
+<div class="modal-overlay" id="modal-cargo-masivo">
+  <div class="modal">
+    <div class="modal-title">📤 Cargo Masivo</div>
+    <div class="alert alert-info">ℹ️ Genera el mismo cargo para todos los departamentos activos.</div>
+    <div class="form-group">
+      <label>Concepto *</label>
+      <select id="masivo-concepto" onchange="autoFillMontoMasivo()"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Monto *</label>
+        <input type="number" id="masivo-monto" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Período</label>
+        <input type="month" id="masivo-periodo">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha de Cargo</label>
+        <input type="date" id="masivo-fecha">
+      </div>
+      <div class="form-group">
+        <label>Fecha de Vencimiento</label>
+        <input type="date" id="masivo-vencimiento">
+      </div>
+    </div>
+    <div id="masivo-preview" style="background:var(--cream);border-radius:8px;padding:12px;font-size:0.85rem;color:var(--muted);margin-bottom:4px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-cargo-masivo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMasivo()">Generar Cargos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Pago -->
+<div class="modal-overlay" id="modal-pago">
+  <div class="modal">
+    <div class="modal-title">✅ Registrar Pago</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Departamento *</label>
+        <select id="pago-depto" onchange="loadCargosPendientes()"></select>
+      </div>
+      <div class="form-group">
+        <label>Cargo a saldar *</label>
+        <select id="pago-cargo"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Monto Pagado *</label>
+        <input type="number" id="pago-monto" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Fecha de Pago *</label>
+        <input type="date" id="pago-fecha">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Método de Pago</label>
+      <select id="pago-metodo">
+        <option>Efectivo</option>
+        <option>Transferencia</option>
+        <option>Cheque</option>
+        <option>Depósito</option>
+        <option>Tarjeta</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Folio / Referencia</label>
+      <input type="text" id="pago-folio" placeholder="Auto-generado si se deja vacío">
+    </div>
+    <div class="form-group">
+      <label>Observaciones</label>
+      <input type="text" id="pago-notas" placeholder="">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-pago')">Cancelar</button>
+      <button class="btn btn-success" onclick="savePago()">✅ Registrar Pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Concepto -->
+<div class="modal-overlay" id="modal-concepto">
+  <div class="modal">
+    <div class="modal-title">🏷️ Concepto de Cobro</div>
+    <input type="hidden" id="concepto-id">
+    <div class="form-group">
+      <label>Nombre del Concepto *</label>
+      <input type="text" id="concepto-nombre" placeholder="Ej: Cuota de Mantenimiento">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Monto Mensual</label>
+        <input type="number" id="concepto-monto" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="concepto-tipo">
+          <option>Fijo mensual</option>
+          <option>Variable</option>
+          <option>Extraordinario</option>
+          <option>Multa</option>
+          <option>Servicio</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <textarea id="concepto-desc" rows="2" placeholder="Descripción del concepto..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Estado</label>
+      <select id="concepto-activo">
+        <option value="1">Activo</option>
+        <option value="0">Inactivo</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-concepto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveConcepto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Pago Cargo (desde morosidad) -->
+<div class="modal-overlay" id="modal-nota">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-title" id="nota-titulo">Detalle</div>
+    <div id="nota-contenido" style="font-size:0.9rem;line-height:1.7;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modal-nota')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== DATA STORE ====================
+let DB = {
+  deptos: [],
+  cargos: [],
+  pagos: [],
+  conceptos: []
+};
+
+function saveDB() {
+  try { localStorage.setItem('fracadmin_db', JSON.stringify(DB)); } catch(e) {}
+}
+function loadDB() {
+  try {
+    const d = localStorage.getItem('fracadmin_db');
+    if (d) DB = JSON.parse(d);
+  } catch(e) {}
+}
+
+function id() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ==================== SEED DATA ====================
+function seedData() {
+  if (DB.conceptos.length > 0) return;
+
+  DB.conceptos = [
+    { id:'c1', nombre:'Cuota de Mantenimiento', monto:800, tipo:'Fijo mensual', desc:'Mantenimiento de áreas comunes', activo:1 },
+    { id:'c2', nombre:'Fondo de Reserva', monto:200, tipo:'Fijo mensual', desc:'Reserva para reparaciones mayores', activo:1 },
+    { id:'c3', nombre:'Seguridad / Vigilancia', monto:400, tipo:'Fijo mensual', desc:'Servicio de vigilancia 24/7', activo:1 },
+    { id:'c4', nombre:'Gas Común', monto:150, tipo:'Variable', desc:'Gas para áreas comunes', activo:1 },
+    { id:'c5', nombre:'Multa por Reglamento', monto:500, tipo:'Multa', desc:'Infracciones al reglamento', activo:1 },
+  ];
+
+  const nombres = [
+    'García López, Juan Carlos','Martínez Soto, María Elena','Hernández Ruiz, Roberto',
+    'López Torres, Ana Patricia','Jiménez Castro, Luis Alberto','Morales Vega, Sandra Beatriz',
+    'Rodríguez Pérez, Carlos Eduardo','González Díaz, Laura Inés','Ramírez Flores, Miguel Ángel',
+    'Torres Medina, Claudia Verónica','Vega Salinas, Francisco Javier','Cruz Moreno, Patricia Alicia',
+  ];
+  const torres = ['Torre A','Torre A','Torre A','Torre B','Torre B','Torre C'];
+
+  for (let i = 1; i <= 12; i++) {
+    const torre = torres[Math.floor((i-1)/2)] || 'Torre A';
+    DB.deptos.push({
+      id: `d${i}`,
+      num: `${torre.slice(-1)}-${100 + i}`,
+      torre: torre,
+      residente: nombres[i-1] || `Residente ${i}`,
+      tel: `33 ${1000+i*7} ${4000+i*11}`.replace(/(\d{2}) (\d{4}) (\d{4})/,'$1 $2 $3'),
+      email: `depto${i}@ejemplo.com`,
+      estado: i <= 9 ? 'Al corriente' : (i === 10 ? 'Moroso' : (i===11?'Moroso':'Desocupado')),
+      notas: ''
+    });
+  }
+
+  // Generar cargos de los últimos 3 meses
+  const hoy = new Date();
+  for (let m = 0; m < 3; m++) {
+    const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - m, 1);
+    const venc = new Date(hoy.getFullYear(), hoy.getMonth() - m, 10);
+    const periodo = fecha.toISOString().slice(0,7);
+    
+    DB.deptos.filter(d => d.estado !== 'Desocupado').forEach(dep => {
+      ['c1','c2','c3'].forEach(cid => {
+        const concepto = DB.conceptos.find(c => c.id === cid);
+        if (!concepto) return;
+        const cargoid = id();
+        const vencida = venc < hoy && m > 0;
+        DB.cargos.push({
+          id: cargoid,
+          depto_id: dep.id,
+          concepto_id: cid,
+          monto: concepto.monto,
+          fecha: fecha.toISOString().slice(0,10),
+          vencimiento: venc.toISOString().slice(0,10),
+          periodo: periodo,
+          notas: '',
+          estatus: 'Pendiente'
+        });
+      });
+    });
+  }
+
+  // Registrar pagos para los deptos "al corriente" en mes actual y anterior
+  DB.deptos.filter(d => d.estado === 'Al corriente').forEach(dep => {
+    DB.cargos.filter(c => c.depto_id === dep.id).forEach(cargo => {
+      // Pagar todos excepto el mes más reciente para simular variedad
+      if (cargo.periodo < new Date().toISOString().slice(0,7)) {
+        const pago = {
+          id: id(),
+          folio: 'PAG-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+          cargo_id: cargo.id,
+          depto_id: dep.id,
+          concepto_id: cargo.concepto_id,
+          monto: cargo.monto,
+          fecha: cargo.vencimiento,
+          metodo: ['Efectivo','Transferencia','Depósito'][Math.floor(Math.random()*3)],
+          notas: ''
+        };
+        DB.pagos.push(pago);
+        cargo.estatus = 'Pagado';
+      }
+    });
+  });
+
+  // Marcar vencidos
+  DB.cargos.forEach(c => {
+    if (c.estatus === 'Pendiente' && new Date(c.vencimiento) < hoy) {
+      c.estatus = 'Vencido';
+    }
+  });
+
+  saveDB();
+}
+
+// ==================== UTILS ====================
+function fmt(n) { return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n||0); }
+function fmtDate(d) { if(!d) return '-'; return new Date(d+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); }
+function today() { return new Date().toISOString().slice(0,10); }
+function thisMonth() { return new Date().toISOString().slice(0,7); }
+
+function getDepto(id) { return DB.deptos.find(d => d.id === id) || {}; }
+function getConcepto(id) { return DB.conceptos.find(c => c.id === id) || {}; }
+
+function getSaldoDepto(depto_id) {
+  const totalCargos = DB.cargos.filter(c => c.depto_id === depto_id && c.estatus !== 'Pagado').reduce((s,c)=>s+c.monto,0);
+  return totalCargos;
+}
+
+// ==================== VIEWS ====================
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mnav-item').forEach(b => b.classList.remove('active'));
+  
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll(`.nav-tab`).forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(name)) b.classList.add('active');
+  });
+  document.querySelectorAll(`.mnav-item`).forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(name)) b.classList.add('active');
+  });
+
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'departamentos') renderDeptos();
+  if (name === 'cargos') { populateSelects(); renderCargos(); }
+  if (name === 'pagos') { populateSelects(); renderPagos(); }
+  if (name === 'morosidad') renderMorosidad();
+  if (name === 'conceptos') renderConceptos();
+}
+
+// ==================== DASHBOARD ====================
+function renderDashboard() {
+  const totalDeptos = DB.deptos.length;
+  const activos = DB.deptos.filter(d => d.estado !== 'Desocupado').length;
+  const morosos = DB.deptos.filter(d => d.estado === 'Moroso').length;
+  const totalCargos = DB.cargos.filter(c => c.estatus !== 'Pagado').reduce((s,c)=>s+c.monto,0);
+  const totalPagado = DB.pagos.reduce((s,p)=>s+p.monto,0);
+  const vencidos = DB.cargos.filter(c => c.estatus === 'Vencido').reduce((s,c)=>s+c.monto,0);
+
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Departamentos</div>
+      <div class="stat-value">${totalDeptos}</div>
+      <div class="stat-sub">${activos} activos · ${morosos} morosos</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Total Recaudado</div>
+      <div class="stat-value" style="font-size:1.5rem;">${fmt(totalPagado)}</div>
+      <div class="stat-sub">${DB.pagos.length} pagos registrados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Por Cobrar</div>
+      <div class="stat-value" style="font-size:1.5rem;color:var(--gold)">${fmt(totalCargos)}</div>
+      <div class="stat-sub">${DB.cargos.filter(c=>c.estatus==='Pendiente').length} cargos pendientes</div>
+    </div>
+    <div class="stat-card" style="--accent:var(--red);">
+      <div class="stat-label">Adeudo Vencido</div>
+      <div class="stat-value" style="font-size:1.5rem;color:var(--red)">${fmt(vencidos)}</div>
+      <div class="stat-sub">${DB.cargos.filter(c=>c.estatus==='Vencido').length} cargos vencidos</div>
+    </div>
+  `;
+
+  // Barras por concepto
+  const conceptoTotals = {};
+  DB.conceptos.forEach(c => {
+    const recaudado = DB.pagos.filter(p => p.concepto_id === c.id).reduce((s,p)=>s+p.monto,0);
+    const pendiente = DB.cargos.filter(cargo => cargo.concepto_id === c.id && cargo.estatus !== 'Pagado').reduce((s,cargo)=>s+cargo.monto,0);
+    conceptoTotals[c.id] = { nombre: c.nombre, recaudado, pendiente };
+  });
+
+  let barsHTML = '';
+  Object.values(conceptoTotals).forEach(ct => {
+    const total = ct.recaudado + ct.pendiente;
+    const pct = total > 0 ? (ct.recaudado / total * 100) : 0;
+    barsHTML += `
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;">
+          <span style="font-weight:600;">${ct.nombre}</span>
+          <span style="color:var(--muted)">${fmt(ct.recaudado)} / ${fmt(total)}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${pct < 50 ? 'red' : pct < 80 ? 'gold' : ''}" style="width:${pct}%"></div>
+        </div>
+      </div>
+    `;
+  });
+  document.getElementById('concepto-bars').innerHTML = barsHTML || '<div class="empty-state"><div>Sin datos</div></div>';
+
+  // Últimos movimientos
+  const ultimos = [...DB.pagos].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,8);
+  const um = document.getElementById('ultimos-movimientos');
+  if (ultimos.length === 0) {
+    um.innerHTML = `<tr><td colspan="4" class="empty-state">Sin movimientos</td></tr>`;
+  } else {
+    um.innerHTML = ultimos.map(p => {
+      const dep = getDepto(p.depto_id);
+      const con = getConcepto(p.concepto_id);
+      return `<tr>
+        <td><strong>${dep.num||'-'}</strong></td>
+        <td style="font-size:0.8rem;">${con.nombre||'-'}</td>
+        <td class="amount-positive">${fmt(p.monto)}</td>
+        <td><span class="badge badge-green">Pago</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Top deudores
+  const deudores = DB.deptos.map(dep => {
+    const saldo = getSaldoDepto(dep.id);
+    const mesesVencidos = DB.cargos.filter(c => c.depto_id === dep.id && c.estatus === 'Vencido').length;
+    return { dep, saldo, mesesVencidos };
+  }).filter(d => d.saldo > 0).sort((a,b) => b.saldo - a.saldo).slice(0,6);
+
+  const td = document.getElementById('top-deudores');
+  if (deudores.length === 0) {
+    td.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🎉</div>¡Sin deudores!</div></td></tr>`;
+  } else {
+    td.innerHTML = deudores.map(({dep, saldo, mesesVencidos}) => {
+      const nivel = mesesVencidos >= 3 ? 'Crítico' : mesesVencidos >= 2 ? 'Alto' : 'Bajo';
+      const badge = nivel === 'Crítico' ? 'badge-red' : nivel === 'Alto' ? 'badge-gold' : 'badge-blue';
+      return `<tr>
+        <td><strong>${dep.num}</strong> <span class="tag">${dep.torre||''}</span></td>
+        <td>${dep.residente}</td>
+        <td class="amount-negative">${fmt(saldo)}</td>
+        <td>${mesesVencidos} cargo(s)</td>
+        <td><span class="badge ${badge}">${nivel}</span></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ==================== DEPARTAMENTOS ====================
+function renderDeptos() {
+  const q = (document.getElementById('filtro-deptos')?.value||'').toLowerCase();
+  const est = document.getElementById('filtro-estado-depto')?.value||'';
+  
+  let deptos = DB.deptos.filter(d => {
+    const match = !q || d.num.toLowerCase().includes(q) || d.residente.toLowerCase().includes(q);
+    const matchEst = !est || d.estado === est;
+    return match && matchEst;
+  });
+
+  const tbody = document.getElementById('tabla-deptos');
+  if (deptos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🏠</div>No se encontraron departamentos</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = deptos.map(d => {
+    const saldo = getSaldoDepto(d.id);
+    const badge = d.estado === 'Moroso' ? 'badge-red' : d.estado === 'Desocupado' ? 'badge-gray' : 'badge-green';
+    return `<tr>
+      <td><strong>${d.num}</strong> <span class="tag">${d.torre||''}</span></td>
+      <td>${d.residente}</td>
+      <td>${d.tel||'-'}</td>
+      <td style="font-size:0.82rem;">${d.email||'-'}</td>
+      <td><span class="badge ${badge}">${d.estado}</span></td>
+      <td class="${saldo>0?'amount-negative':''}">${saldo>0?fmt(saldo):'—'}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="editDepto('${d.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="deleteDepto('${d.id}')" title="Eliminar">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editDepto(did) {
+  const d = DB.deptos.find(x=>x.id===did);
+  if (!d) return;
+  document.getElementById('depto-id').value = d.id;
+  document.getElementById('depto-num').value = d.num;
+  document.getElementById('depto-torre').value = d.torre||'';
+  document.getElementById('depto-residente').value = d.residente;
+  document.getElementById('depto-tel').value = d.tel||'';
+  document.getElementById('depto-email').value = d.email||'';
+  document.getElementById('depto-estado').value = d.estado;
+  document.getElementById('depto-notas').value = d.notas||'';
+  openModal('modal-depto');
+}
+
+function deleteDepto(did) {
+  if (!confirm('¿Eliminar este departamento? También se eliminarán sus cargos y pagos.')) return;
+  DB.deptos = DB.deptos.filter(d => d.id !== did);
+  DB.cargos = DB.cargos.filter(c => c.depto_id !== did);
+  DB.pagos = DB.pagos.filter(p => p.depto_id !== did);
+  saveDB(); renderDeptos();
+}
+
+function saveDepto() {
+  const num = document.getElementById('depto-num').value.trim();
+  const res = document.getElementById('depto-residente').value.trim();
+  if (!num || !res) { alert('Número de depto y residente son requeridos.'); return; }
+  
+  const did = document.getElementById('depto-id').value;
+  const data = {
+    num, residente: res,
+    torre: document.getElementById('depto-torre').value.trim(),
+    tel: document.getElementById('depto-tel').value.trim(),
+    email: document.getElementById('depto-email').value.trim(),
+    estado: document.getElementById('depto-estado').value,
+    notas: document.getElementById('depto-notas').value.trim()
+  };
+  
+  if (did) {
+    const idx = DB.deptos.findIndex(d => d.id === did);
+    DB.deptos[idx] = { ...DB.deptos[idx], ...data };
+  } else {
+    DB.deptos.push({ id: id(), ...data });
+  }
+  saveDB(); closeModal('modal-depto'); renderDeptos();
+  document.getElementById('depto-id').value = '';
+}
+
+// ==================== CONCEPTOS ====================
+function renderConceptos() {
+  const tbody = document.getElementById('tabla-conceptos');
+  if (DB.conceptos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🏷️</div>Sin conceptos</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = DB.conceptos.map(c => `<tr>
+    <td><strong>${c.nombre}</strong></td>
+    <td>${c.monto > 0 ? fmt(c.monto) : '—'}</td>
+    <td><span class="badge badge-blue">${c.tipo}</span></td>
+    <td style="font-size:0.82rem;color:var(--muted);">${c.desc||'—'}</td>
+    <td><span class="badge ${c.activo?'badge-green':'badge-gray'}">${c.activo?'Activo':'Inactivo'}</span></td>
+    <td>
+      <button class="btn btn-secondary btn-sm btn-icon" onclick="editConcepto('${c.id}')">✏️</button>
+      <button class="btn btn-secondary btn-sm btn-icon" onclick="deleteConcepto('${c.id}')">🗑️</button>
+    </td>
+  </tr>`).join('');
+}
+
+function editConcepto(cid) {
+  const c = DB.conceptos.find(x=>x.id===cid);
+  if (!c) return;
+  document.getElementById('concepto-id').value = c.id;
+  document.getElementById('concepto-nombre').value = c.nombre;
+  document.getElementById('concepto-monto').value = c.monto;
+  document.getElementById('concepto-tipo').value = c.tipo;
+  document.getElementById('concepto-desc').value = c.desc||'';
+  document.getElementById('concepto-activo').value = c.activo;
+  openModal('modal-concepto');
+}
+
+function deleteConcepto(cid) {
+  if (!confirm('¿Eliminar este concepto?')) return;
+  DB.conceptos = DB.conceptos.filter(c => c.id !== cid);
+  saveDB(); renderConceptos();
+}
+
+function saveConcepto() {
+  const nombre = document.getElementById('concepto-nombre').value.trim();
+  if (!nombre) { alert('El nombre es requerido.'); return; }
+  const cid = document.getElementById('concepto-id').value;
+  const data = {
+    nombre,
+    monto: parseFloat(document.getElementById('concepto-monto').value)||0,
+    tipo: document.getElementById('concepto-tipo').value,
+    desc: document.getElementById('concepto-desc').value.trim(),
+    activo: parseInt(document.getElementById('concepto-activo').value)
+  };
+  if (cid) {
+    const idx = DB.conceptos.findIndex(c => c.id === cid);
+    DB.conceptos[idx] = { ...DB.conceptos[idx], ...data };
+  } else {
+    DB.conceptos.push({ id: id(), ...data });
+  }
+  saveDB(); closeModal('modal-concepto'); renderConceptos();
+  document.getElementById('concepto-id').value = '';
+}
+
+// ==================== CARGOS ====================
+function populateSelects() {
+  // Deptos
+  const deptoOpts = DB.deptos.map(d => `<option value="${d.id}">${d.num} - ${d.residente}</option>`).join('');
+  ['cargo-depto','pago-depto'].forEach(sid => {
+    const el = document.getElementById(sid);
+    if (el) el.innerHTML = '<option value="">Seleccionar...</option>' + deptoOpts;
+  });
+
+  // Conceptos
+  const concOpts = DB.conceptos.filter(c=>c.activo).map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+  const allConcOpts = '<option value="">Todos</option>' + DB.conceptos.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  ['cargo-concepto','masivo-concepto'].forEach(sid => {
+    const el = document.getElementById(sid);
+    if (el) el.innerHTML = '<option value="">Seleccionar...</option>' + concOpts;
+  });
+  ['filtro-concepto-cargo','filtro-concepto-pago'].forEach(sid => {
+    const el = document.getElementById(sid);
+    if (el) el.innerHTML = allConcOpts;
+  });
+}
+
+function autoFillMontoCargo() {
+  const cid = document.getElementById('cargo-concepto').value;
+  const c = DB.conceptos.find(x=>x.id===cid);
+  if (c && c.monto > 0) document.getElementById('cargo-monto').value = c.monto;
+}
+function autoFillMontoMasivo() {
+  const cid = document.getElementById('masivo-concepto').value;
+  const c = DB.conceptos.find(x=>x.id===cid);
+  if (c && c.monto > 0) document.getElementById('masivo-monto').value = c.monto;
+  updateMasivoPreview();
+}
+function updateMasivoPreview() {
+  const cid = document.getElementById('masivo-concepto').value;
+  const monto = parseFloat(document.getElementById('masivo-monto').value)||0;
+  const activos = DB.deptos.filter(d => d.estado !== 'Desocupado').length;
+  const el = document.getElementById('masivo-preview');
+  if (cid && monto > 0) {
+    el.textContent = `Se generarán ${activos} cargos × ${fmt(monto)} = ${fmt(activos * monto)} total`;
+  } else {
+    el.textContent = 'Selecciona un concepto y monto para ver el total.';
+  }
+}
+
+function renderCargos() {
+  const q = (document.getElementById('filtro-cargos')?.value||'').toLowerCase();
+  const cid = document.getElementById('filtro-concepto-cargo')?.value||'';
+  const est = document.getElementById('filtro-estatus-cargo')?.value||'';
+
+  let cargos = DB.cargos.filter(c => {
+    const dep = getDepto(c.depto_id);
+    const matchQ = !q || dep.num?.toLowerCase().includes(q) || dep.residente?.toLowerCase().includes(q);
+    const matchC = !cid || c.concepto_id === cid;
+    const matchE = !est || c.estatus === est;
+    return matchQ && matchC && matchE;
+  }).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+  const tbody = document.getElementById('tabla-cargos');
+  if (cargos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">💰</div>Sin cargos</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = cargos.map(c => {
+    const dep = getDepto(c.depto_id);
+    const con = getConcepto(c.concepto_id);
+    const badge = c.estatus === 'Pagado' ? 'badge-green' : c.estatus === 'Vencido' ? 'badge-red' : 'badge-gold';
+    return `<tr>
+      <td style="font-size:0.82rem;">${fmtDate(c.fecha)}</td>
+      <td><strong>${dep.num||'-'}</strong></td>
+      <td>${con.nombre||'-'} ${c.periodo?`<span class="tag">${c.periodo}</span>`:''}</td>
+      <td>${fmt(c.monto)}</td>
+      <td style="font-size:0.82rem;${new Date(c.vencimiento)<new Date()&&c.estatus!=='Pagado'?'color:var(--red);':''}">${fmtDate(c.vencimiento)}</td>
+      <td><span class="badge ${badge}">${c.estatus}</span></td>
+      <td>
+        ${c.estatus !== 'Pagado' ? `<button class="btn btn-success btn-sm" onclick="pagarCargo('${c.id}')">Pagar</button>` : ''}
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="deleteCargo('${c.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function saveCargo() {
+  const depto_id = document.getElementById('cargo-depto').value;
+  const concepto_id = document.getElementById('cargo-concepto').value;
+  const monto = parseFloat(document.getElementById('cargo-monto').value)||0;
+  if (!depto_id || !concepto_id || monto <= 0) { alert('Depto, concepto y monto son requeridos.'); return; }
+  
+  const fecha = document.getElementById('cargo-fecha').value || today();
+  const vencimiento = document.getElementById('cargo-vencimiento').value || fecha;
+  const periodo = document.getElementById('cargo-periodo').value || thisMonth();
+  const notas = document.getElementById('cargo-notas').value;
+  const estatus = new Date(vencimiento) < new Date() ? 'Vencido' : 'Pendiente';
+
+  DB.cargos.push({ id:id(), depto_id, concepto_id, monto, fecha, vencimiento, periodo, notas, estatus });
+  saveDB(); closeModal('modal-cargo'); renderCargos();
+}
+
+function saveMasivo() {
+  const concepto_id = document.getElementById('masivo-concepto').value;
+  const monto = parseFloat(document.getElementById('masivo-monto').value)||0;
+  if (!concepto_id || monto <= 0) { alert('Selecciona concepto y monto.'); return; }
+
+  const fecha = document.getElementById('masivo-fecha').value || today();
+  const vencimiento = document.getElementById('masivo-vencimiento').value || fecha;
+  const periodo = document.getElementById('masivo-periodo').value || thisMonth();
+  const estatus = new Date(vencimiento) < new Date() ? 'Vencido' : 'Pendiente';
+
+  DB.deptos.filter(d => d.estado !== 'Desocupado').forEach(dep => {
+    DB.cargos.push({ id:id(), depto_id:dep.id, concepto_id, monto, fecha, vencimiento, periodo, notas:'Cargo masivo', estatus });
+  });
+  saveDB(); closeModal('modal-cargo-masivo'); renderCargos();
+  alert(`Cargos generados para ${DB.deptos.filter(d=>d.estado!=='Desocupado').length} departamentos.`);
+}
+
+function deleteCargo(cid) {
+  if (!confirm('¿Eliminar este cargo?')) return;
+  DB.cargos = DB.cargos.filter(c => c.id !== cid);
+  DB.pagos = DB.pagos.filter(p => p.cargo_id !== cid);
+  saveDB(); renderCargos();
+}
+
+function pagarCargo(cid) {
+  const cargo = DB.cargos.find(c => c.id === cid);
+  if (!cargo) return;
+  // Pre-fill modal pago
+  populateSelects();
+  document.getElementById('pago-depto').value = cargo.depto_id;
+  loadCargosPendientes();
+  setTimeout(()=>{
+    document.getElementById('pago-cargo').value = cid;
+    const sel = document.getElementById('pago-cargo');
+    sel.dispatchEvent(new Event('change'));
+    document.getElementById('pago-monto').value = cargo.monto;
+  },50);
+  document.getElementById('pago-fecha').value = today();
+  openModal('modal-pago');
+}
+
+// ==================== PAGOS ====================
+function loadCargosPendientes() {
+  const depto_id = document.getElementById('pago-depto').value;
+  const pendientes = DB.cargos.filter(c => c.depto_id === depto_id && c.estatus !== 'Pagado');
+  const sel = document.getElementById('pago-cargo');
+  if (pendientes.length === 0) {
+    sel.innerHTML = '<option value="">Sin cargos pendientes</option>';
+    return;
+  }
+  sel.innerHTML = pendientes.map(c => {
+    const con = getConcepto(c.concepto_id);
+    return `<option value="${c.id}">${con.nombre||'?'} ${c.periodo||''} — ${fmt(c.monto)}</option>`;
+  }).join('');
+  // auto fill monto
+  sel.addEventListener('change', function() {
+    const c = DB.cargos.find(x=>x.id===this.value);
+    if (c) document.getElementById('pago-monto').value = c.monto;
+  });
+  const first = DB.cargos.find(c=>c.id===pendientes[0].id);
+  if (first) document.getElementById('pago-monto').value = first.monto;
+}
+
+function savePago() {
+  const depto_id = document.getElementById('pago-depto').value;
+  const cargo_id = document.getElementById('pago-cargo').value;
+  const monto = parseFloat(document.getElementById('pago-monto').value)||0;
+  const fecha = document.getElementById('pago-fecha').value || today();
+  if (!depto_id || !cargo_id || monto <= 0) { alert('Completa todos los campos requeridos.'); return; }
+
+  const cargo = DB.cargos.find(c => c.id === cargo_id);
+  const folio = document.getElementById('pago-folio').value.trim() || 'PAG-' + Math.random().toString(36).slice(2,8).toUpperCase();
+
+  DB.pagos.push({
+    id: id(), folio, cargo_id, depto_id,
+    concepto_id: cargo?.concepto_id||'',
+    monto, fecha,
+    metodo: document.getElementById('pago-metodo').value,
+    notas: document.getElementById('pago-notas').value
+  });
+
+  // Marcar cargo como pagado
+  if (cargo) cargo.estatus = 'Pagado';
+  
+  // Actualizar estado depto
+  const saldo = getSaldoDepto(depto_id);
+  const dep = DB.deptos.find(d => d.id === depto_id);
+  if (dep && saldo === 0 && dep.estado === 'Moroso') dep.estado = 'Al corriente';
+
+  saveDB(); closeModal('modal-pago'); renderPagos();
+  document.getElementById('pago-folio').value = '';
+}
+
+function renderPagos() {
+  const q = (document.getElementById('filtro-pagos')?.value||'').toLowerCase();
+  const cid = document.getElementById('filtro-concepto-pago')?.value||'';
+
+  let pagos = DB.pagos.filter(p => {
+    const dep = getDepto(p.depto_id);
+    const matchQ = !q || dep.num?.toLowerCase().includes(q) || p.folio?.toLowerCase().includes(q) || dep.residente?.toLowerCase().includes(q);
+    const matchC = !cid || p.concepto_id === cid;
+    return matchQ && matchC;
+  }).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+  const tbody = document.getElementById('tabla-pagos');
+  if (pagos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">✅</div>Sin pagos registrados</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = pagos.map(p => {
+    const dep = getDepto(p.depto_id);
+    const con = getConcepto(p.concepto_id);
+    return `<tr>
+      <td style="font-size:0.78rem;font-weight:600;color:var(--blue);">${p.folio}</td>
+      <td style="font-size:0.82rem;">${fmtDate(p.fecha)}</td>
+      <td><strong>${dep.num||'-'}</strong></td>
+      <td style="font-size:0.82rem;">${dep.residente||'-'}</td>
+      <td style="font-size:0.82rem;">${con.nombre||'-'}</td>
+      <td class="amount-positive">${fmt(p.monto)}</td>
+      <td><span class="badge badge-blue">${p.metodo||'—'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ==================== MOROSIDAD ====================
+function renderMorosidad() {
+  const filtroNivel = document.getElementById('filtro-mora-nivel')?.value||'';
+
+  // Summary cards
+  const totalMorosos = DB.deptos.filter(d => d.estado === 'Moroso').length;
+  const totalVencido = DB.cargos.filter(c => c.estatus === 'Vencido').reduce((s,c)=>s+c.monto,0);
+  const cargosVencidos = DB.cargos.filter(c => c.estatus === 'Vencido').length;
+  const pctMora = DB.deptos.filter(d=>d.estado!=='Desocupado').length > 0
+    ? (totalMorosos / DB.deptos.filter(d=>d.estado!=='Desocupado').length * 100).toFixed(1)
+    : 0;
+
+  document.getElementById('morosity-summary').innerHTML = `
+    <div class="mc-item"><div class="mc-num">${totalMorosos}</div><div class="mc-label">Deptos Morosos</div></div>
+    <div class="mc-item"><div class="mc-num">${fmt(totalVencido)}</div><div class="mc-label">Total Adeudado</div></div>
+    <div class="mc-item"><div class="mc-num">${cargosVencidos}</div><div class="mc-label">Cargos Vencidos</div></div>
+    <div class="mc-item"><div class="mc-num">${pctMora}%</div><div class="mc-label">Índice de Morosidad</div></div>
+  `;
+
+  // Por concepto
+  const concGrid = document.getElementById('morosity-concepts');
+  concGrid.innerHTML = DB.conceptos.map(con => {
+    const adeudo = DB.cargos.filter(c => c.concepto_id === con.id && c.estatus === 'Vencido').reduce((s,c)=>s+c.monto,0);
+    if (adeudo === 0) return '';
+    const deptos_afectados = new Set(DB.cargos.filter(c=>c.concepto_id===con.id&&c.estatus==='Vencido').map(c=>c.depto_id)).size;
+    return `
+      <div class="concept-card">
+        <div class="cc-header">
+          <div class="cc-name">${con.nombre}</div>
+          <span class="badge badge-red">${deptos_afectados} deptos</span>
+        </div>
+        <div class="cc-amount">${fmt(adeudo)}</div>
+        <div class="cc-footer">Adeudo vencido acumulado</div>
+      </div>
+    `;
+  }).join('');
+
+  // Detalle tabla
+  const deudores = [];
+  DB.deptos.forEach(dep => {
+    DB.conceptos.forEach(con => {
+      const cargosVenc = DB.cargos.filter(c => c.depto_id === dep.id && c.concepto_id === con.id && c.estatus === 'Vencido');
+      if (cargosVenc.length === 0) return;
+      const adeudo = cargosVenc.reduce((s,c)=>s+c.monto,0);
+      const meses = cargosVenc.length;
+      const nivel = meses >= 3 ? 'Crítico' : meses >= 2 ? 'Alto' : 'Bajo';
+      deudores.push({ dep, con, meses, adeudo, nivel });
+    });
+  });
+
+  const filtrados = deudores.filter(d => !filtroNivel || d.nivel === filtroNivel).sort((a,b)=>b.adeudo-a.adeudo);
+
+  const tbody = document.getElementById('tabla-morosidad');
+  if (filtrados.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🎉</div>Sin morosidad${filtroNivel?' en este nivel':''}</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtrados.map(d => {
+    const badge = d.nivel === 'Crítico' ? 'badge-red' : d.nivel === 'Alto' ? 'badge-gold' : 'badge-blue';
+    return `<tr>
+      <td><strong>${d.dep.num}</strong></td>
+      <td>${d.dep.residente}</td>
+      <td style="font-size:0.82rem;">${d.con.nombre}</td>
+      <td style="text-align:center;">${d.meses}</td>
+      <td class="amount-negative">${fmt(d.adeudo)}</td>
+      <td><span class="badge ${badge}">${d.nivel}</span></td>
+      <td><button class="btn btn-success btn-sm" onclick="pagarDesdeDeudor('${d.dep.id}')">Registrar Pago</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function pagarDesdeDeudor(depto_id) {
+  populateSelects();
+  document.getElementById('pago-depto').value = depto_id;
+  loadCargosPendientes();
+  document.getElementById('pago-fecha').value = today();
+  openModal('modal-pago');
+}
+
+// ==================== MODAL HELPERS ====================
+function openModal(mid) {
+  // Reset form if new
+  if (mid === 'modal-cargo') {
+    populateSelects();
+    document.getElementById('cargo-fecha').value = today();
+    document.getElementById('cargo-periodo').value = thisMonth();
+  }
+  if (mid === 'modal-cargo-masivo') {
+    populateSelects();
+    document.getElementById('masivo-fecha').value = today();
+    document.getElementById('masivo-periodo').value = thisMonth();
+    document.getElementById('masivo-preview').textContent = 'Selecciona un concepto y monto para ver el total.';
+  }
+  if (mid === 'modal-pago') {
+    populateSelects();
+    document.getElementById('pago-fecha').value = today();
+  }
+  if (mid === 'modal-depto') {
+    if (!document.getElementById('depto-id').value) {
+      ['depto-num','depto-torre','depto-residente','depto-tel','depto-email','depto-notas'].forEach(f => document.getElementById(f).value='');
+      document.getElementById('depto-estado').value = 'Al corriente';
+    }
+  }
+  if (mid === 'modal-concepto') {
+    if (!document.getElementById('concepto-id').value) {
+      ['concepto-nombre','concepto-monto','concepto-desc'].forEach(f => document.getElementById(f).value='');
+    }
+  }
+  document.getElementById(mid).classList.add('open');
+}
+
+function closeModal(mid) {
+  document.getElementById(mid).classList.remove('open');
+  // Reset hidden IDs
+  if (mid === 'modal-depto') document.getElementById('depto-id').value = '';
+  if (mid === 'modal-concepto') document.getElementById('concepto-id').value = '';
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) closeModal(this.id);
+  });
+});
+
+// Responsive grid
+const style = document.createElement('style');
+style.textContent = `@media(max-width:768px){.resp-cols{grid-template-columns:1fr!important;}}`;
+document.head.appendChild(style);
+
+// ==================== INIT ====================
+function init() {
+  loadDB();
+  seedData();
+  document.getElementById('fecha-nav').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  showView('dashboard');
+}
+
+init();
+</script>
+</body>
+</html>
